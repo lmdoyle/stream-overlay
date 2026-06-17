@@ -238,7 +238,7 @@
     try {
       const res  = await fetch(`https://www.tikwm.com/api/user/info?unique_id=${TT_USERNAME}`);
       const data = await res.json();
-      const followers = data?.data?.fans_count;
+      const followers = data?.data?.user?.followerCount;
       if (followers !== undefined) {
         setRow(document.getElementById('tt-count'), document.getElementById('tt-bar'), followers, ttGoal);
       } else throw new Error('Unexpected response shape');
