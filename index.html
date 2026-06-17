@@ -216,7 +216,7 @@
         localStorage.removeItem('twitch_token');
         initTwitch();
       } else {
-        document.getElementById('tw-count').innerHTML = `ERR <span class="goal-label">/ ${twGoal}</span>`;
+        document.getElementById('tw-count').innerHTML = `ERR <span class="goal-label">/ ${twGoal ?? '—'}</span>`;
       }
     }
   }
