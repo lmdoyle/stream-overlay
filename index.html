@@ -164,6 +164,8 @@
   const TW_CLIENT_ID    = 'i0e6usnv0xnffabmhp7a1qmh5nh6iy';
   const TW_USERNAME     = 'gamer_guy_tv';
   const TW_REDIRECT_URI = 'https://lmdoyle.github.io/stream-overlay/';
+  const TT_RAPIDAPI_KEY = 'b299f9e5b4msh1a1a001e09e6aa4p1228e2jsne3a3125b0c12';
+  const TT_USERNAME     = 'gamerguytv';
 
   function setRow(countEl, barEl, val, goal) {
     if (val === null || goal === null) return;
@@ -232,11 +234,27 @@
     }
   }
 
-  setRow(document.getElementById('tt-count'), document.getElementById('tt-bar'), tt, ttGoal);
+  async function fetchTikTokFollowers() {
+    try {
+      const res  = await fetch(`https://tiktok-api23.p.rapidapi.com/api/user/info?uniqueId=${TT_USERNAME}`, {
+        headers: { 'x-rapidapi-key': TT_RAPIDAPI_KEY, 'x-rapidapi-host': 'tiktok-api23.p.rapidapi.com' }
+      });
+      const data = await res.json();
+      const followers = data?.userInfo?.stats?.followerCount;
+      if (followers !== undefined) {
+        setRow(document.getElementById('tt-count'), document.getElementById('tt-bar'), followers, ttGoal);
+      } else throw new Error('Unexpected response shape');
+    } catch (e) {
+      console.error('TikTok fetch failed:', e.message);
+      document.getElementById('tt-count').innerHTML = `ERR <span class="goal-label">/ ${ttGoal ?? '—'}</span>`;
+    }
+  }
 
   fetchYouTubeSubs();
   setInterval(fetchYouTubeSubs, 60 * 1000);
   initTwitch();
+  fetchTikTokFollowers();
+  setInterval(fetchTikTokFollowers, 60 * 1000);
 </script>
 
 </body>
