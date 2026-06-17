@@ -156,11 +156,14 @@
 <script>
   const p = new URLSearchParams(window.location.search);
   const ytGoal = p.get('ytGoal');
-  const tw     = p.get('tw'),  twGoal = p.get('twGoal');
-  const tt     = p.get('tt'),  ttGoal = p.get('ttGoal');
+  const twGoal = p.get('twGoal');
+  const tt     = p.get('tt'), ttGoal = p.get('ttGoal');
 
-  const YT_API_KEY    = 'AIzaSyBO_340lPaIBW2J5EBubFsTuUPmzbYFLhg';
-  const YT_CHANNEL_ID = 'UCqerFn8i1CGwejETEnnGEfw';
+  const YT_API_KEY      = 'AIzaSyBO_340lPaIBW2J5EBubFsTuUPmzbYFLhg';
+  const YT_CHANNEL_ID   = 'UCqerFn8i1CGwejETEnnGEfw';
+  const TW_CLIENT_ID    = 'i0e6usnv0xnffabmhp7a1qmh5nh6iy';
+  const TW_USERNAME     = 'gamer_guy_tv';
+  const TW_REDIRECT_URI = 'https://lmdoyle.github.io/stream-overlay/';
 
   function setRow(countEl, barEl, val, goal) {
     if (val === null || goal === null) return;
@@ -174,20 +177,66 @@
       const data = await res.json();
       if (data.error) throw new Error(data.error.message);
       const subs = data.items?.[0]?.statistics?.subscriberCount;
-      if (subs !== undefined) {
-        setRow(document.getElementById('yt-count'), document.getElementById('yt-bar'), parseInt(subs), ytGoal);
-      }
+      if (subs !== undefined) setRow(document.getElementById('yt-count'), document.getElementById('yt-bar'), parseInt(subs), ytGoal);
     } catch (e) {
       console.error('YouTube fetch failed:', e.message);
       document.getElementById('yt-count').innerHTML = `ERR <span class="goal-label">/ ${ytGoal}</span>`;
     }
   }
 
-  setRow(document.getElementById('tw-count'), document.getElementById('tw-bar'), tw, twGoal);
+  function getTwitchToken() {
+    const hash = new URLSearchParams(window.location.hash.slice(1));
+    if (hash.get('access_token')) {
+      const token = hash.get('access_token');
+      localStorage.setItem('twitch_token', token);
+      window.history.replaceState(null, '', window.location.pathname + window.location.search);
+      return token;
+    }
+    return localStorage.getItem('twitch_token');
+  }
+
+  async function fetchTwitchFollowers(token) {
+    try {
+      const userRes  = await fetch(`https://api.twitch.tv/helix/users?login=${TW_USERNAME}`, {
+        headers: { 'Client-ID': TW_CLIENT_ID, 'Authorization': `Bearer ${token}` }
+      });
+      const userData = await userRes.json();
+      if (userData.error || !userData.data?.[0]) throw new Error(userData.message || 'User not found');
+      const broadcasterId = userData.data[0].id;
+
+      const followRes  = await fetch(`https://api.twitch.tv/helix/channels/followers?broadcaster_id=${broadcasterId}`, {
+        headers: { 'Client-ID': TW_CLIENT_ID, 'Authorization': `Bearer ${token}` }
+      });
+      const followData = await followRes.json();
+      if (followData.error) throw new Error(followData.message);
+      setRow(document.getElementById('tw-count'), document.getElementById('tw-bar'), followData.total, twGoal);
+    } catch (e) {
+      console.error('Twitch fetch failed:', e.message);
+      if (e.message?.includes('401') || e.message?.includes('Invalid OAuth')) {
+        localStorage.removeItem('twitch_token');
+        initTwitch();
+      } else {
+        document.getElementById('tw-count').innerHTML = `ERR <span class="goal-label">/ ${twGoal}</span>`;
+      }
+    }
+  }
+
+  function initTwitch() {
+    const token = getTwitchToken();
+    if (token) {
+      fetchTwitchFollowers(token);
+      setInterval(() => fetchTwitchFollowers(token), 60 * 1000);
+    } else {
+      const authUrl = `https://id.twitch.tv/oauth2/authorize?client_id=${TW_CLIENT_ID}&redirect_uri=${encodeURIComponent(TW_REDIRECT_URI)}&response_type=token&scope=moderator%3Aread%3Afollowers`;
+      document.getElementById('tw-count').innerHTML = `<a href="${authUrl}" style="color:#9146FF;font-size:11px;text-decoration:none;">Connect Twitch</a>`;
+    }
+  }
+
   setRow(document.getElementById('tt-count'), document.getElementById('tt-bar'), tt, ttGoal);
 
   fetchYouTubeSubs();
   setInterval(fetchYouTubeSubs, 60 * 1000);
+  initTwitch();
 </script>
 
 </body>
