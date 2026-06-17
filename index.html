@@ -155,6 +155,12 @@
 
 <script>
   const p = new URLSearchParams(window.location.search);
+  const ytGoal = p.get('ytGoal');
+  const tw     = p.get('tw'),  twGoal = p.get('twGoal');
+  const tt     = p.get('tt'),  ttGoal = p.get('ttGoal');
+
+  const YT_API_KEY    = 'AIzaSyBO_340lPaIBW2J5EBubFsTuUPmzbYFLhg';
+  const YT_CHANNEL_ID = 'UCqerFn8i1CGwejETEnnGEfw';
 
   function setRow(countEl, barEl, val, goal) {
     if (val === null || goal === null) return;
@@ -162,15 +168,22 @@
     barEl.style.width = Math.min(100, Math.round(val / goal * 100)) + '%';
   }
 
-  const yt  = p.get('yt'),  ytGoal  = p.get('ytGoal');
-  const tw  = p.get('tw'),  twGoal  = p.get('twGoal');
-  const tt  = p.get('tt'),  ttGoal  = p.get('ttGoal');
+  async function fetchYouTubeSubs() {
+    try {
+      const res  = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=statistics&id=${YT_CHANNEL_ID}&key=${YT_API_KEY}`);
+      const data = await res.json();
+      const subs = data.items?.[0]?.statistics?.subscriberCount;
+      if (subs !== undefined) {
+        setRow(document.getElementById('yt-count'), document.getElementById('yt-bar'), parseInt(subs), ytGoal);
+      }
+    } catch (e) { console.error('YouTube fetch failed', e); }
+  }
 
-  setTimeout(() => {
-    setRow(document.getElementById('yt-count'), document.getElementById('yt-bar'), yt, ytGoal);
-    setRow(document.getElementById('tw-count'), document.getElementById('tw-bar'), tw, twGoal);
-    setRow(document.getElementById('tt-count'), document.getElementById('tt-bar'), tt, ttGoal);
-  }, 100);
+  setRow(document.getElementById('tw-count'), document.getElementById('tw-bar'), tw, twGoal);
+  setRow(document.getElementById('tt-count'), document.getElementById('tt-bar'), tt, ttGoal);
+
+  fetchYouTubeSubs();
+  setInterval(fetchYouTubeSubs, 5 * 60 * 1000);
 </script>
 
 </body>
