@@ -172,18 +172,22 @@
     try {
       const res  = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=statistics&id=${YT_CHANNEL_ID}&key=${YT_API_KEY}`);
       const data = await res.json();
+      if (data.error) throw new Error(data.error.message);
       const subs = data.items?.[0]?.statistics?.subscriberCount;
       if (subs !== undefined) {
         setRow(document.getElementById('yt-count'), document.getElementById('yt-bar'), parseInt(subs), ytGoal);
       }
-    } catch (e) { console.error('YouTube fetch failed', e); }
+    } catch (e) {
+      console.error('YouTube fetch failed:', e.message);
+      document.getElementById('yt-count').innerHTML = `ERR <span class="goal-label">/ ${ytGoal}</span>`;
+    }
   }
 
   setRow(document.getElementById('tw-count'), document.getElementById('tw-bar'), tw, twGoal);
   setRow(document.getElementById('tt-count'), document.getElementById('tt-bar'), tt, ttGoal);
 
   fetchYouTubeSubs();
-  setInterval(fetchYouTubeSubs, 5 * 60 * 1000);
+  setInterval(fetchYouTubeSubs, 60 * 1000);
 </script>
 
 </body>
